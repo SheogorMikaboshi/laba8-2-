@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Вкладки -->
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="orders">Заказы</button>
+        {% if user.is_admin %}
+        <button class="tab-btn" data-tab="clients">Клиенты</button>
+        <button class="tab-btn" data-tab="contractors">Подрядчики</button>
+        <button class="tab-btn" data-tab="objects">Объекты</button>
+        <button class="tab-btn" data-tab="materials">Материалы</button>
+        {% endif %}
+    </div>
+
+    <!-- Содержимое вкладок -->
+    <div class="tab-content-wrapper">
+        <!-- Вкладка заказов -->
+        <div id="orders" class="tab-content active">
+            {% if user.is_admin %}
+            <div class="order-form-card">
+                <h3>Создать новый заказ</h3>
+                <form method="POST" action="{{ url_for('create_order') }}" id="orderForm">
+                    <div class="form-columns">
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label>Клиент</label>
+                                <select name="client_id" required class="required-select">
+                                    <option value="" disabled selected>-- Выберите клиента --</option>
+                                    {% for client in clients %}
+                                    <option value="{{ client._id }}">{{ client.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Подрядчик</label>
+                                <select name="contractor_id" required class="required-select">
+                                    <option value="" disabled selected>-- Выберите подрядчика --</option>
+                                    {% for contractor in contractors %}
+                                    <option value="{{ contractor._id }}">{{ contractor.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label>Объект</label>
+                                <select name="object_id" required class="required-select">
+                                    <option value="" disabled selected>-- Выберите объект --</option>
+                                    {% for object in objects %}
+                                    <option value="{{ object._id }}">{{ object.type }} ({{ object.address }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Назначить пользователю</label>
+                                <select name="user_id" required class="required-select">
+                                    <option value="" disabled selected>-- Выберите пользователя --</option>
+                                    {% for user in users %}
+                                    <option value="{{ user._id }}">{{ user.login }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group materials-group">
+                        <label>Материалы</label>
+                        <div class="materials-grid">
+                            {% for material in materials %}
+                            <label class="material-checkbox">
+                                <input type="checkbox" name="materials" value="{{ material._id }}">
+                                <span>{{ material.name }} ({{ material.cost }} руб.)</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Создать заказ</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="orders-list">
+                <h3>Список заказов</h3>
+                {% if not orders %}
+                <p class="no-orders">Нет доступных заказов</p>
+                {% else %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Клиент</th>
+                            <th>Подрядчик</th>
+                            <th>Объект</th>
+                            <th>Материалы</th>
+                            <th>Стоимость</th>
+                            <th>Дата создания</th>
+                            {% if user.is_admin %}
+                            <th>Действия</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ order.client.name }}</td>
+                            <td>{{ order.contractor.name }}</td>
+                            <td>{{ order.object.type }} ({{ order.object.address }})</td>
+                            <td>{{ order.materials|join(', ') }}</td>
+                            <td>{{ order.cost }} руб.</td>
+                            <td>{{ order.created_at }}</td>
+                            {% if user.is_admin %}
+                            <td>
+                                <a href="{{ url_for('delete_order', order_id=order._id) }}" 
+                                   class="delete-link"
+                                   onclick="return confirm('Удалить этот заказ?')">Удалить</a>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Вкладка клиентов -->
+        <div id="clients" class="tab-content">
+            <h3>Клиенты</h3>
+            {% if not clients %}
+            <p class="no-data">Нет данных о клиентах</p>
+            {% else %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Контакт</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>{{ client.name }}</td>
+                        <td>{{ client.contact }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+
+        <!-- Вкладка подрядчиков -->
+        <div id="contractors" class="tab-content">
+            <h3>Подрядчики</h3>
+            {% if not contractors %}
+            <p class="no-data">Нет данных о подрядчиках</p>
+            {% else %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Имя</th>
+                        <th>Контакт</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contractor in contractors %}
+                    <tr>
+                        <td>{{ contractor.name }}</td>
+                        <td>{{ contractor.contact }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+
+        <!-- Вкладка объектов -->
+        <div id="objects" class="tab-content">
+            <h3>Объекты</h3>
+            {% if not objects %}
+            <p class="no-data">Нет данных об объектах</p>
+            {% else %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Тип</th>
+                        <th>Адрес</th>
+                        <th>Площадь (м²)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for object in objects %}
+                    <tr>
+                        <td>{{ object.type }}</td>
+                        <td>{{ object.address }}</td>
+                        <td>{{ object.area }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+
+        <!-- Вкладка материалов -->
+        <div id="materials" class="tab-content">
+            <h3>Материалы</h3>
+            {% if not materials %}
+            <p class="no-data">Нет данных о материалах</p>
+            {% else %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Стоимость (руб.)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materials %}
+                    <tr>
+                        <td>{{ material.name }}</td>
+                        <td>{{ material.cost }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Переключение вкладок
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(btn.dataset.tab).classList.add('active');
+        btn.classList.add('active');
+    });
+});
+
+// Валидация формы заказа
+const orderForm = document.getElementById('orderForm');
+if (orderForm) {
+    orderForm.addEventListener('submit', function(e) {
+        const selects = this.querySelectorAll('.required-select');
+        let isValid = true;
+        
+        selects.forEach(select => {
+            if (!select.value) {
+                select.classList.add('error');
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Пожалуйста, заполните все обязательные поля');
+        }
+    });
+
+    // Сброс ошибок при выборе
+    document.querySelectorAll('.required-select').forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.classList.remove('error');
+            }
+        });
+    });
+}
+</script>
+{% endblock %}
